@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FOC Interactive Quiz — London Metropolitan University</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #ffe6f0;
+            --surface: #fff0f6;
+            --card: #ffcceb;
+            --accent: #ff1493;
+            --accent2: #ff69b4;
+            --correct: #ff1493;
+            --wrong: #ff6b9d;
+            --neutral: #ff85c1;
+            --text: #6b1448;
+            --muted: #b8449d;
+            --border: #ff99d1;
+            --badge-w1: #ff6b9d;
+            --badge-w2: #ff1493;
+            --badge-w3: #ff69b4;
+            --badge-w4: #ff85c1;
+            --badge-w5: #ff99d1;
+            --badge-w6: #ec4899;
+            --badge-mx: #ff1493;
+        }
+
+        body {
+            font-family: 'Arial', 'Trebuchet MS', system-ui, sans-serif;
+            background: #111111;
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        #emoji-sky {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .flying-emoji {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translate3d(var(--start-x), var(--y), 0) scale(var(--scale));
+            opacity: 0;
+            will-change: transform, opacity, filter;
+            animation: flyAcross var(--duration) linear forwards;
+            filter: drop-shadow(0 0 8px rgba(255, 20, 147, 0.28));
+        }
+
+        .flying-emoji__inner {
+            display: inline-block;
+            font-size: var(--size);
+            line-height: 1;
+            animation: bob 2.8s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        @keyframes flyAcross {
+            0% {
+                transform: translate3d(var(--start-x), var(--y), 0) scale(calc(var(--scale) * 0.92));
+                opacity: 0;
+            }
+
+            10% {
+                opacity: var(--alpha);
+            }
+
+            65% {
+                opacity: var(--alpha);
+            }
+
+            100% {
+                transform: translate3d(var(--end-x), calc(var(--y) + var(--drift)), 0) scale(calc(var(--scale) * 1.08));
+                opacity: 0;
+            }
+        }
+
+        @keyframes bob {
+
+            0%,
+            100% {
+                transform: translateY(-6px) rotate(-5deg);
+            }
+
+            50% {
+                transform: translateY(6px) rotate(5deg);
+            }
+        }
+
+        header,
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes sparkle {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0) rotate(0deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1) rotate(180deg);
+            }
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(255, 20, 147, 0.3), 0 0 20px rgba(255, 105, 180, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 20, 147, 0.6), 0 0 40px rgba(255, 105, 180, 0.4);
+            }
+        }
+
+        header {
+            width: 100%;
+            background: linear-gradient(135deg, #ffcceb 0%, #ff99d1 100%);
+            border-bottom: 2px solid #ff85c1;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            animation: glow 2s ease-in-out infinite;
+            box-shadow: 0 4px 20px rgba(255, 20, 147, 0.2);
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 1px;
+        }
+
+        header h1 span {
+            color: #ff1493;
+            text-shadow: 0 0 10px rgba(255, 20, 147, 0.5);
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        #score-badge {
+            background: rgba(255, 204, 235, 0.8);
+            border: 2px solid #ff1493;
+            border-radius: 999px;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.85rem;
+            color: var(--text);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        #score-badge b {
+            color: #ff1493;
+            font-weight: 800;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 820px;
+            padding: 2rem 1.5rem 4rem;
+            flex: 1;
+        }
+
+        /* ── Progress bar ─────────────────────────────── */
+        #progress-wrap {
+            margin-bottom: 1.8rem;
+        }
+
+        #progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+
+        #progress-bar-track {
+            height: 6px;
+            background: #ffe6f0;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid #ff99d1;
+        }
+
+        #progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff1493, #ff69b4, #ff1493);
+            border-radius: 999px;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.6);
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        /* ── Filter pills ─────────────────────────────── */
+        #filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-pill {
+            padding: 0.3rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid #ff99d1;
+            transition: all 0.15s;
+            user-select: none;
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            color: var(--text);
+        }
+
+        .filter-pill:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.2);
+        }
+
+        .filter-pill.active {
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+
+        .filter-pill[data-week="all"].active {
+            background: linear-gradient(135deg, #ff1493, #ff69b4);
+            border-color: #ff1493;
+        }
+
+        .filter-pill[data-week="1"].active {
+            background: linear-gradient(135deg, #ff6b9d, #ff99d1);
+            border-color: #ff6b9d;
+        }
+
+        .filter-pill[data-week="2"].active {
+            background: linear-gradient(135deg, #ff1493, #ff69b4);
+            border-color: #ff1493;
+        }
+
+        .filter-pill[data-week="3"].active {
+            background: linear-gradient(135deg, #ff69b4, #ff99d1);
+            border-color: #ff69b4;
+        }
+
+        .filter-pill[data-week="4"].active {
+            background: linear-gradient(135deg, #ff85c1, #ffb3d9);
+            border-color: #ff85c1;
+        }
+
+        .filter-pill[data-week="5"].active {
+            background: linear-gradient(135deg, #ff99d1, #ffcceb);
+            border-color: #ff99d1;
+        }
+
+        .filter-pill[data-week="6"].active {
+            background: linear-gradient(135deg, #ff1493, #ff69b4);
+            border-color: #ff1493;
+        }
+
+        .filter-pill[data-week="mixed"].active {
+            background: linear-gradient(135deg, #ff1493, #ff85c1);
+            border-color: #ff1493;
+        }
+
+        /* ── Question card ─────────────────────────────── */
+        #question-card {
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            border: 2px solid #ff99d1;
+            border-radius: 16px;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease;
+            box-shadow: 0 8px 30px rgba(255, 20, 147, 0.15);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .q-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .q-num {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .week-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            color: #fff;
+            background: linear-gradient(135deg, #ff1493, #ff69b4);
+            box-shadow: 0 0 8px rgba(255, 20, 147, 0.3);
+        }
+
+        .topic-badge {
+            font-size: 0.72rem;
+            color: var(--text);
+            background: linear-gradient(135deg, #ffe6f0 0%, #fff0f6 100%);
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            border: 2px solid #ff99d1;
+        }
+
+        #question-text {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 1.6rem;
+            color: var(--text);
+        }
+
+        #question-text code {
+            background: linear-gradient(135deg, #ffe6f0 0%, #fff0f6 100%);
+            color: #ff1493;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: 1px solid #ff99d1;
+        }
+
+        /* Code block inside question */
+        .code-block {
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            border: 2px solid #ff99d1;
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0 1.2rem;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.88rem;
+            color: #ff1493;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        /* ── Options ─────────────────────────────── */
+        #options-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.85rem 1.1rem;
+            border-radius: 10px;
+            border: 2px solid #ff99d1;
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .option-item:hover:not(.disabled) {
+            border-color: #ff1493;
+            background: linear-gradient(135deg, #ffcceb 0%, #fff0f6 100%);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.3);
+        }
+
+        .option-item.selected:not(.revealed) {
+            border-color: #ff1493;
+            background: linear-gradient(135deg, #ffb3d9 0%, #ffe6f0 100%);
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.4);
+        }
+
+        .option-item.correct {
+            border-color: #ff1493;
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.5);
+        }
+
+        .option-item.wrong {
+            border-color: #ff6b9d;
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            opacity: 0.6;
+        }
+
+        .option-item.missed {
+            border-color: #ff1493;
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            opacity: 0.7;
+        }
+
+        .option-letter {
+            min-width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffb3d9 0%, #ff99d1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+            transition: background 0.15s;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 20, 147, 0.3);
+        }
+
+        .option-item.correct .option-letter {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+        }
+
+        .option-item.wrong .option-letter {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff99d1 100%);
+            color: #fff;
+        }
+
+        .option-item.missed .option-letter {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+        }
+
+        .option-item.selected:not(.revealed) .option-letter {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+        }
+
+        .option-text {
+            font-size: 0.93rem;
+            line-height: 1.5;
+            flex: 1;
+            color: var(--text);
+        }
+
+        .option-text code {
+            background: linear-gradient(135deg, #ffe6f0 0%, #fff0f6 100%);
+            color: #ff1493;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.88em;
+            border: 1px solid #ff99d1;
+        }
+
+        .option-icon {
+            margin-left: auto;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            align-self: center;
+        }
+
+        /* ── Explanation box ─────────────────────────────── */
+        #explanation-box {
+            display: none;
+            margin-top: 1.4rem;
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            border: 2px solid #ff99d1;
+            border-radius: 10px;
+            padding: 1.1rem 1.3rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text);
+            animation: fadeIn 0.25s ease;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.1);
+        }
+
+        #explanation-box.show {
+            display: block;
+        }
+
+        #explanation-box strong {
+            color: var(--text);
+        }
+
+        #explanation-box code {
+            background: #ffe6f0;
+            color: #ff1493;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+
+        #explanation-box .exp-title {
+            font-weight: 700;
+            color: #ff1493;
+            margin-bottom: 0.5rem;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Action buttons ─────────────────────────────── */
+        #action-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.6rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.6rem 1.4rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        #btn-submit {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+            flex: 1;
+            min-width: 120px;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+            border: 2px solid #ff1493;
+        }
+
+        #btn-submit:hover:not(:disabled) {
+            box-shadow: 0 0 25px rgba(255, 20, 147, 0.6);
+            transform: scale(1.05);
+        }
+
+        #btn-next {
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            color: var(--text);
+            border: 2px solid #ff99d1;
+            flex: 1;
+            min-width: 120px;
+            display: none;
+        }
+
+        #btn-next:hover {
+            background: linear-gradient(135deg, #ffb3d9 0%, #ffcceb 100%);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.3);
+        }
+
+        #btn-prev {
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            color: var(--text);
+            border: 2px solid #ff99d1;
+            min-width: 80px;
+        }
+
+        #btn-prev:hover:not(:disabled) {
+            color: var(--text);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.3);
+        }
+
+        /* ── Results screen ─────────────────────────────── */
+        #results-screen {
+            display: none;
+            background: linear-gradient(135deg, #ffcceb 0%, #ffe6f0 100%);
+            border: 2px solid #ff99d1;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+            box-shadow: 0 8px 30px rgba(255, 20, 147, 0.15);
+        }
+
+        #results-screen h2 {
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .big-score {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff1493, #ff69b4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 1rem 0;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.3);
+        }
+
+        .score-sub {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        #grade-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .grade-box {
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            border: 2px solid #ff99d1;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .grade-box .gb-num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ff1493;
+        }
+
+        .grade-box .gb-lbl {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 0.2rem;
+        }
+
+        .grade-box.correct .gb-num {
+            color: #ff1493;
+        }
+
+        .grade-box.wrong .gb-num {
+            color: #ff6b9d;
+        }
+
+        .grade-box.skipped .gb-num {
+            color: #ff99d1;
+        }
+
+        #btn-restart {
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            border: 2px solid #ff1493;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+
+        #btn-restart:hover {
+            box-shadow: 0 0 25px rgba(255, 20, 147, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* ── Answer popup ─────────────────────────────── */
+        #answer-popup {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 20, 147, 0.25);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 30;
+        }
+
+        #answer-popup.show {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .answer-popup-card {
+            width: min(560px, 94vw);
+            border-radius: 18px;
+            border: 2px solid #ff99d1;
+            background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%);
+            box-shadow: 0 15px 45px rgba(255, 20, 147, 0.28);
+            padding: 1.25rem 1.2rem 1.1rem;
+            animation: popIn 0.22s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .answer-popup-top {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.6rem;
+        }
+
+        #answer-popup-emoji {
+            font-size: 1.65rem;
+            line-height: 1;
+        }
+
+        #answer-popup-title {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: #ff1493;
+            letter-spacing: 0.02em;
+        }
+
+        #answer-popup-msg {
+            font-size: 0.93rem;
+            line-height: 1.6;
+            color: var(--text);
+            margin-bottom: 0.9rem;
+        }
+
+        #answer-popup-msg code {
+            background: #ffe6f0;
+            color: #ff1493;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            border: 1px solid #ff99d1;
+            font-size: 0.88em;
+        }
+
+        #btn-popup-close {
+            width: 100%;
+            border: 2px solid #ff1493;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%);
+            color: #fff;
+            padding: 0.62rem 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.35);
+        }
+
+        #btn-popup-close:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 22px rgba(255, 20, 147, 0.52);
+        }
+
+        /* ── Mobile ─────────────────────────────── */
+        @media (max-width: 520px) {
+            header {
+                padding: 0.75rem 1rem;
+            }
+
+            .container {
+                padding: 1rem 1rem 3rem;
+            }
+
+            #question-card {
+                padding: 1.3rem;
+            }
+        }
+
+        /* Plain dark theme override */
+        :root {
+            --bg: #0f1115;
+            --surface: #171b22;
+            --card: #1d2430;
+            --accent: #4ea1ff;
+            --accent2: #7bb9ff;
+            --correct: #4ea1ff;
+            --wrong: #ff6b6b;
+            --neutral: #94a3b8;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: #334155;
+            --badge-w1: #3b82f6;
+            --badge-w2: #3b82f6;
+            --badge-w3: #3b82f6;
+            --badge-w4: #3b82f6;
+            --badge-w5: #3b82f6;
+            --badge-w6: #3b82f6;
+            --badge-mx: #3b82f6;
+        }
+
+        #emoji-sky,
+        .flying-emoji,
+        .flying-emoji__inner {
+            display: none !important;
+        }
+
+        body {
+            background: #0f1115;
+            color: var(--text);
+        }
+
+        header,
+        #question-card,
+        #results-screen,
+        .grade-box,
+        .answer-popup-card,
+        #explanation-box,
+        .option-item,
+        .topic-badge,
+        #btn-next,
+        #btn-prev,
+        .filter-pill,
+        #score-badge,
+        #progress-bar-track {
+            background: #1a1f29 !important;
+            border-color: #334155 !important;
+            color: var(--text) !important;
+            box-shadow: none !important;
+            animation: none !important;
+            text-shadow: none !important;
+        }
+
+        #progress-bar-fill,
+        #btn-submit,
+        #btn-restart,
+        #btn-popup-close,
+        .week-badge,
+        .filter-pill.active,
+        .option-item.correct .option-letter,
+        .option-item.selected:not(.revealed) .option-letter,
+        .option-item.missed .option-letter,
+        .big-score {
+            background: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .option-letter {
+            background: #334155 !important;
+            color: #e5e7eb !important;
+            box-shadow: none !important;
+        }
+
+        #question-text code,
+        .option-text code,
+        #explanation-box code,
+        .code-block,
+        #answer-popup-msg code {
+            background: #111827 !important;
+            border-color: #374151 !important;
+            color: #93c5fd !important;
+        }
+
+        #answer-popup {
+            background: rgba(2, 6, 23, 0.75) !important;
+        }
+
+        .option-item:hover:not(.disabled),
+        .option-item.selected:not(.revealed),
+        .option-item.correct,
+        .option-item.wrong,
+        .option-item.missed,
+        #btn-next:hover,
+        #btn-prev:hover:not(:disabled),
+        #btn-submit:hover:not(:disabled),
+        #btn-restart:hover,
+        #btn-popup-close:hover,
+        .filter-pill:hover {
+            box-shadow: none !important;
+            transform: none !important;
+            opacity: 1 !important;
+            background: #202938 !important;
+            border-color: #475569 !important;
+        }
+
+        header h1 span,
+        #score-badge b,
+        #explanation-box .exp-title,
+        .grade-box .gb-num,
+        #answer-popup-title,
+        .grade-box.correct .gb-num {
+            color: #93c5fd !important;
+        }
+
+        .grade-box.wrong .gb-num {
+            color: #f87171 !important;
+        }
+
+        .grade-box.skipped .gb-num,
+        .score-sub,
+        .q-num,
+        #progress-label,
+        .grade-box .gb-lbl {
+            color: var(--muted) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>🎓 FOC Quiz — <span>London Met</span></h1>
+        <div id="score-badge">Score: <b id="live-score">0</b> / <b id="live-total">100</b></div>
+    </header>
+
+    <div class="container">
+        <div id="progress-wrap">
+            <div id="progress-label">
+                <span id="prog-text">Question 1 of 100</span>
+                <span id="prog-pct">0%</span>
+            </div>
+            <div id="progress-bar-track">
+                <div id="progress-bar-fill" style="width:1%"></div>
+            </div>
+        </div>
+
+        <div id="filter-row">
+            <div class="filter-pill active" data-week="all">All Weeks</div>
+            <div class="filter-pill" data-week="7">Week 7</div>
+            <div class="filter-pill" data-week="8">Week 8</div>
+            <div class="filter-pill" data-week="9">Week 9</div>
+            <div class="filter-pill" data-week="10">Week 10</div>
+            <div class="filter-pill" data-week="11">Week 11</div>
+            <div class="filter-pill" data-week="12">Week 12</div>
+            <div class="filter-pill" data-week="mixed">Mixed Practical</div>
+        </div>
+
+        <div id="question-card">
+            <div class="q-meta">
+                <span class="q-num" id="q-num-label">Q1</span>
+                <span class="week-badge" id="week-badge">Week 7</span>
+                <span class="topic-badge" id="topic-badge">Topic</span>
+            </div>
+            <div id="question-text"></div>
+            <ul id="options-list"></ul>
+            <div id="explanation-box">
+                <div class="exp-title">💡 Explanation</div>
+                <div id="explanation-text"></div>
+            </div>
+            <div id="action-row">
+                <button class="btn" id="btn-prev">← Prev</button>
+                <button class="btn" id="btn-submit">Submit Answer</button>
+                <button class="btn" id="btn-next">Next →</button>
+            </div>
+        </div>
+
+        <div id="results-screen">
+            <h2>🎉 Quiz Complete!</h2>
+            <div class="big-score" id="final-score-txt">0%</div>
+            <p class="score-sub" id="final-score-sub"></p>
+            <div id="grade-breakdown">
+                <div class="grade-box correct">
+                    <div class="gb-num" id="res-correct">0</div>
+                    <div class="gb-lbl">Correct</div>
+                </div>
+                <div class="grade-box wrong">
+                    <div class="gb-num" id="res-wrong">0</div>
+                    <div class="gb-lbl">Wrong</div>
+                </div>
+                <div class="grade-box skipped">
+                    <div class="gb-num" id="res-skipped">0</div>
+                    <div class="gb-lbl">Skipped</div>
+                </div>
+            </div>
+            <button id="btn-restart" onclick="restart()">🔁 Restart Quiz</button>
+        </div>
+
+        <div id="answer-popup" aria-hidden="true">
+            <div class="answer-popup-card" role="dialog" aria-modal="true" aria-labelledby="answer-popup-title">
+                <div class="answer-popup-top">
+                    <span id="answer-popup-emoji">🥰</span>
+                    <div id="answer-popup-title">Nice one!</div>
+                </div>
+                <div id="answer-popup-msg"></div>
+                <button id="btn-popup-close">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─────────────────────────────────────────────────────────────────────────────
+        // QUESTION DATA — 100 questions
+        // ─────────────────────────────────────────────────────────────────────────────
+        const QUESTIONS = [
+
+            // ── WEEK 7 ──────────────────────────────────────────────────────────────────
+            {
+                week: 7, topic: "Functions",
+                q: "If a Python function does not have a `return` statement, what does it return by default?",
+                options: [
+                    "0",
+                    "An empty string ''",
+                    "None",
+                    "It raises a SyntaxError"
+                ],
+                correct: 2,
+                explanation: "From the Week 7 slides: <strong>\"Python returns the value None, if no return is given. None represents the absence of a value.\"</strong>"
+            },
+            {
+                week: 7, topic: "Variable Scope",
+                q: "What is the difference between a <strong>local variable</strong> and a <strong>global variable</strong>?",
+                options: [
+                    "Local variables are declared inside a function and can only be used there; global variables are declared outside and can be accessed anywhere.",
+                    "Global variables are always strings; local variables can be any type.",
+                    "Local variables must be capitalized; global variables must be lowercase.",
+                    "There is no difference; the terms are interchangeable."
+                ],
+                correct: 0,
+                explanation: "From the Week 7 slides: <strong>\"global variables are variables declared outside functions... local variables are variables declared inside a function and can be used only inside that particular function.\"</strong>"
+            },
+            {
+                week: 7, topic: "String Methods",
+                q: "Given `s = \"Hello\"`, what is the output of `s.replace('l', 'p')`?",
+                options: [
+                    "\"Heppo\"",
+                    "\"Hepp\"",
+                    "\"Heppo\"",
+                    "The original string `s` is not modified, so it prints \"Hello\""
+                ],
+                correct: 0,
+                explanation: "The `.replace()` method returns a new string with all occurrences of the first argument replaced by the second. It does not modify the original string. The output will be a new string \"Heppo\"."
+            },
+            {
+                week: 7, topic: "String Methods",
+                q: "What does the `.split()` method do to a string when called without arguments?",
+                options: [
+                    "It splits the string into a list of characters.",
+                    "It splits the string by commas.",
+                    "It splits the string by whitespace (spaces, tabs, newlines) into a list of words.",
+                    "It reverses the string."
+                ],
+                correct: 2,
+                explanation: "From the Week 7 slides: <strong>\"when just calling split without any parameters it will divide the string according to whitespace.\"</strong> For example, `\"Hello World\".split()` results in `['Hello', 'World']`."
+            },
+            {
+                week: 7, topic: "String Formatting",
+                q: "Which of the following is the modern f-string method for formatting a float `price = 50.5` to two decimal places?",
+                options: [
+                    "`\"Price: %0.2f\" % price`",
+                    "`f\"Price: {price:.2f}\"`",
+                    "`\"Price: {}\".format(price)`",
+                    "`\"Price: \" + str(price)`"
+                ],
+                correct: 1,
+                explanation: "The Week 7 slides show f-string formatting as `f\"The price is Rs. {price:.2f}\"`. This is the modern, preferred way to format strings in Python for its readability and conciseness."
+            },
+
+            // ── WEEK 8 ──────────────────────────────────────────────────────────────────
+            {
+                week: 8, topic: "File Handling",
+                q: "Which file mode is used to <strong>open a file for writing</strong>, which overwrites the file if it exists and creates it if it does not?",
+                options: [
+                    "`'r'` (read)",
+                    "`'a'` (append)",
+                    "`'w'` (write)",
+                    "`'r+'` (read and write)"
+                ],
+                correct: 2,
+                explanation: "From the Week 8 slides: The <strong>`'w'`</strong> mode opens a file for writing. It will create the file if it doesn't exist or completely overwrite its contents if it does."
+            },
+            {
+                week: 8, topic: "File Handling",
+                q: "What is the main difference between the `'w'` (write) and `'a'` (append) file modes?",
+                options: [
+                    "`'w'` can only write strings, while `'a'` can write any data type.",
+                    "`'w'` overwrites the entire file, while `'a'` adds new content to the end of the file.",
+                    "`'w'` reads the file, while `'a'` writes to it.",
+                    "There is no difference."
+                ],
+                correct: 1,
+                explanation: "From the Week 8 slides: <strong>`'w'`</strong> (write) mode truncates the file first, deleting existing content. <strong>`'a'`</strong> (append) mode moves the cursor to the end of the file, so any new writes are added without deleting old content."
+            },
+            {
+                week: 8, topic: "File Handling",
+                q: "What does the `file.readlines()` method return?",
+                options: [
+                    "A single string containing the entire file content.",
+                    "A list of strings, where each string is a line from the file including the newline character `\\n`.",
+                    "The first line of the file only.",
+                    "An integer representing the number of lines in the file."
+                ],
+                correct: 1,
+                explanation: "The Week 8 slides show that `file.readlines()` reads all lines from a file and returns them as a list of strings. Each item in the list corresponds to one line from the file."
+            },
+            {
+                week: 8, topic: "Testing vs Debugging",
+                q: "According to the lecture, what is the primary goal of <strong>testing</strong>?",
+                options: [
+                    "To fix errors in the program.",
+                    "To find out “Why is it not working?”.",
+                    "To see “How can I break my program?” by comparing input/output to expected results.",
+                    "To write the code from scratch."
+                ],
+                correct: 2,
+                explanation: "From the Week 8 slides: Testing is about asking <strong>“How can I break my program?”</strong>. It involves comparing the actual input/output with the expected results to see if the program is working correctly. Debugging is the process of fixing the issues found during testing."
+            },
+            {
+                week: 8, topic: "Modularity",
+                q: "What is the benefit of using functions to achieve <strong>modularity</strong> in a program?",
+                options: [
+                    "It makes the program run faster.",
+                    "It makes the program harder to understand.",
+                    "It breaks the program into self-contained modules that are easier to manage, test, and debug.",
+                    "It combines all code into a single, long script."
+                ],
+                correct: 2,
+                explanation: "The Week 8 slides explain that decomposing a program into modules (functions) makes it <strong>\"easier to manage and debug\"</strong> because each part is self-contained and can be tested individually."
+            },
+
+            // ── WEEK 9 ──────────────────────────────────────────────────────────────────
+            {
+                week: 9, topic: "2D Lists",
+                q: "Given a 2D list `data = [[1, 2, 3], [4, 5, 6]]`, how would you access the number <strong>5</strong>?",
+                options: [
+                    "`data[0][1]`",
+                    "`data[1][1]`",
+                    "`data[5]`",
+                    "`data[1, 1]`"
+                ],
+                correct: 1,
+                explanation: "In a 2D list, the first index selects the row and the second selects the column. `data[1]` gets the second row `[4, 5, 6]`. `[1]` of that row is the element at index 1, which is <strong>5</strong>."
+            },
+            {
+                week: 9, topic: "Dictionaries",
+                q: "What is a key difference between a <strong>list</strong> and a <strong>dictionary</strong>?",
+                options: [
+                    "Lists are mutable, while dictionaries are immutable.",
+                    "Lists are accessed by integer indices, while dictionaries are accessed by unique keys.",
+                    "Lists use `{}` while dictionaries use `[]`.",
+                    "Lists can store different data types, while dictionaries can only store strings."
+                ],
+                correct: 1,
+                explanation: "From the Week 9 slides: Lists are an ordered collection where values are accessed by indices. Dictionaries are an ordered collection where values are accessed by <strong>keys</strong>. Both are mutable."
+            },
+            {
+                week: 9, topic: "Exception Handling",
+                q: "What is the purpose of a `try...except` block in Python?",
+                options: [
+                    "To make the code run faster.",
+                    "To handle runtime errors (exceptions) gracefully and prevent the program from crashing.",
+                    "To define a new function.",
+                    "To create a loop that runs a specific number of times."
+                ],
+                correct: 1,
+                explanation: "From the Week 9 slides: <strong>\"An exception is an error that happens during execution... Occurrence of exceptions results in the program crashing. Exceptions can be handled, which avoids your program from crashing.\"</strong> The `try...except` block is the mechanism for this."
+            },
+            {
+                week: 9, topic: "Exception Handling",
+                q: "What type of error is raised when you try to convert a non-numeric string like `'abc'` to an integer using `int('abc')`?",
+                options: [
+                    "`TypeError`",
+                    "`IndexError`",
+                    "`ValueError`",
+                    "`KeyError`"
+                ],
+                correct: 2,
+                explanation: "From the Week 9 slides: A <strong>`ValueError`</strong> is raised when a function receives an argument of the correct type but an inappropriate value. `int()` expects a string that represents a number, but `'abc'` is not a valid value for conversion."
+            },
+            {
+                week: 9, topic: "Exception Handling",
+                q: "Which error occurs if you try to access a dictionary key that does not exist, for example `my_dict['non_existent_key']`?",
+                options: [
+                    "`IndexError`",
+                    "`NameError`",
+                    "`ValueError`",
+                    "`KeyError`"
+                ],
+                correct: 3,
+                explanation: "From the Week 9 slides: A <strong>`KeyError`</strong> is raised when a dictionary key is not found. This is a common error when working with dictionaries without first checking if the key exists."
+            },
+
+            // ── WEEK 10 ─────────────────────────────────────────────────────────────────
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "In Object-Oriented Programming, what is a <strong>class</strong>?",
+                options: [
+                    "A specific, concrete instance of a data structure.",
+                    "A blueprint or template for creating objects that share common properties and behaviors.",
+                    "A built-in Python function.",
+                    "A variable that holds data."
+                ],
+                correct: 1,
+                explanation: "From the Week 10 slides: <strong>\"A class is a definition of objects which share common structure, properties and behaviour... it's like a blueprint.\"</strong> An object is an instance of a class."
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "What is the special name of the method that acts as a constructor in a Python class to initialize an object's attributes?",
+                options: [
+                    "`__main__`",
+                    "`__init__`",
+                    "`__construct__`",
+                    "`__self__`"
+                ],
+                correct: 1,
+                explanation: "From the Week 10 slides: <strong>\"use a special method called `__init__` to initialize the instance, `__init__` serves as the constructor for the class.\"</strong>"
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "What does the `self` parameter represent in a class method?",
+                options: [
+                    "It refers to the class itself, not the instance.",
+                    "It is a reference to the current instance of the class whose method is being called.",
+                    "It is an optional parameter that can be ignored.",
+                    "It holds the first argument passed to the method."
+                ],
+                correct: 1,
+                explanation: "From the Week 10 slides: <strong>\"`self` is a reference to the current instance of the class... in `__init__`, `self` refers to the object currently being created.\"</strong> It allows you to access the attributes and methods of that specific instance."
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "The bundling of data (attributes) and the methods that operate on that data into a single unit (an object) is known as:",
+                options: [
+                    "Inheritance",
+                    "Polymorphism",
+                    "Abstraction",
+                    "Encapsulation"
+                ],
+                correct: 3,
+                explanation: "From the Week 10 slides: <strong>\"Encapsulation is the process of binding together of data and methods that operate on the data.\"</strong> This is a fundamental principle of OOP."
+            },
+            {
+                week: 10, topic: "OOP in Python",
+                q: "How do you create an instance (object) of a class named `Customer` that takes a name and balance as arguments?",
+                options: [
+                    "`my_customer = Customer.new('Mike', 2000)`",
+                    "`my_customer = Customer('Mike', 2000)`",
+                    "`my_customer = new Customer('Mike', 2000)`",
+                    "`my_customer = init Customer('Mike', 2000)`"
+                ],
+                correct: 1,
+                explanation: "From the Week 10 slides, an instance is created by calling the class name as if it were a function: `C1 = Customer(“Mike”, 2000)`. Python automatically calls the `__init__` method."
+            },
+
+            // ── WEEK 11 ─────────────────────────────────────────────────────────────────
+            {
+                week: 11, topic: "Inheritance",
+                q: "In OOP, what is <strong>inheritance</strong>?",
+                options: [
+                    "The ability of an object to take on many forms.",
+                    "The process of defining a new class based on an existing class, inheriting its attributes and methods.",
+                    "The bundling of data and methods into a single object.",
+                    "The hiding of complex implementation details from the user."
+                ],
+                correct: 1,
+                explanation: "From the Week 11 slides: <strong>\"It refers to defining a new class with little or no modification to an existing class. The new class is called derived (or child) class and the one from which it inherits is called the base (or parent) class.\"</strong>"
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "If a `Student` class inherits from a `Person` class, which statement is correct?",
+                options: [
+                    "`Person` is the child class and `Student` is the parent class.",
+                    "`Student` is the derived (child) class and `Person` is the base (parent) class.",
+                    "Both classes are completely independent.",
+                    "The `Student` class cannot have its own unique methods."
+                ],
+                correct: 1,
+                explanation: "The class that inherits (`Student`) is the derived or child class. The class it inherits from (`Person`) is the base or parent class. The child class gets all the features of the parent and can add its own."
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "How do you call the constructor of a parent class `Person` from within the constructor of a child class `Teacher`?",
+                options: [
+                    "`self.Person.__init__(...)`",
+                    "`super().__init__(...)` or `Person.__init__(self, ...)`",
+                    "`init.Person(...)`",
+                    "It is called automatically and cannot be controlled."
+                ],
+                correct: 1,
+                explanation: "The Week 11 slides show the syntax: `Person.__init__(self, name, address, phone)`. Using `super().__init__(...)` is another common and often preferred way to achieve the same result."
+            },
+            {
+                week: 11, topic: "Types of Inheritance",
+                q: "What type of inheritance occurs when a single class inherits from <strong>more than one</strong> base class?",
+                options: [
+                    "Single Inheritance",
+                    "Multi-level Inheritance",
+                    "Multiple Inheritance",
+                    "Hierarchical Inheritance"
+                ],
+                correct: 2,
+                explanation: "From the Week 11 slides: <strong>Multiple Inheritance</strong> is when one child class inherits from two or more parent classes, like a `SmartPhone` class inheriting from both a `Phone` class and a `Camera` class."
+            },
+            {
+                week: 11, topic: "Types of Inheritance",
+                q: "When a `Car` class inherits from `Vehicle`, and an `ElectricCar` class inherits from `Car`, what type of inheritance is this?",
+                options: [
+                    "Multiple Inheritance",
+                    "Hierarchical Inheritance",
+                    "Hybrid Inheritance",
+                    "Multi-level Inheritance"
+                ],
+                correct: 3,
+                explanation: "This is <strong>Multi-level Inheritance</strong>, where a derived class becomes a base class for another class, forming a chain (e.g., Grandparent -> Parent -> Child). The slides show this exact `Vehicle` -> `Car` -> `ElectricCar` example."
+            },
+
+            // ── WEEK 12 ─────────────────────────────────────────────────────────────────
+            {
+                week: 12, topic: "Polymorphism",
+                q: "What does <strong>polymorphism</strong> mean in the context of programming?",
+                options: [
+                    "The process of a child class inheriting from a parent class.",
+                    "The ability of the same function, operator, or method to perform different tasks depending on the context.",
+                    "The practice of hiding internal data from the outside world.",
+                    "A type of inheritance involving more than two classes."
+                ],
+                correct: 1,
+                explanation: "From the Week 12 slides: <strong>\"In programming, polymorphism means the ability of the same function, operator, or method to perform different tasks depending on the context.\"</strong> For example, the `+` operator can add numbers or concatenate strings."
+            },
+            {
+                week: 12, topic: "Polymorphism",
+                q: "The concept that 'if it walks like a duck and quacks like a duck, it must be a duck' refers to which type of polymorphism in Python?",
+                options: [
+                    "Method Overriding",
+                    "Compile-time Polymorphism",
+                    "Duck Typing",
+                    "Operator Overloading"
+                ],
+                correct: 2,
+                explanation: "From the Week 12 slides: This proverb describes <strong>Duck Typing</strong>, where the type of an object is less important than the methods it defines. If an object has the required method (e.g., `.sound()`), it can be used in a function, regardless of its class."
+            },
+            {
+                week: 12, topic: "Polymorphism",
+                q: "When a child class provides a specific implementation of a method that is already defined in its parent class, this is called:",
+                options: [
+                    "Method Overloading",
+                    "Method Overriding",
+                    "Duck Typing",
+                    "Method Hiding"
+                ],
+                correct: 1,
+                explanation: "This is <strong>Method Overriding</strong> (a form of run-time polymorphism). The child class provides its own version of the method, which will be called instead of the parent's version for objects of the child class."
+            },
+            {
+                week: 12, topic: "MRO",
+                q: "What is the Method Resolution Order (MRO) in Python?",
+                options: [
+                    "The order in which variables are resolved in memory.",
+                    "A fixed order for executing lines of code in a script.",
+                    "The order in which Python searches for a method or attribute in a class hierarchy, especially in multiple inheritance.",
+                    "The order of arguments passed to a function."
+                ],
+                correct: 2,
+                explanation: "From the Week 12 slides: <strong>\"MRO (Method Resolution Order) is the order in which Python looks for a method or attribute when multiple inheritance is involved.\"</strong> You can view it using `ClassName.mro()`."
+            },
+            {
+                week: 12, topic: "Default Parameters",
+                q: "What is the purpose of a default parameter in a function, like `def greet(name, message='Hello')`?",
+                options: [
+                    "It forces the user to always provide a value for that parameter.",
+                    "It provides a predefined value for a parameter if no argument is passed for it, making the function more flexible.",
+                    "It sets the parameter's data type.",
+                    "It hides the parameter from the user."
+                ],
+                correct: 1,
+                explanation: "From the Week 12 slides: <strong>\"A default parameter is a parameter in a function that takes a predefined value if no argument is passed for it. It allows functions to be called with fewer arguments than defined.\"</strong>"
+            },
+
+            // ── NEW QUESTIONS ───────────────────────────────────────────────────────────
+            {
+                week: 7, topic: "String Methods",
+                q: "What is the purpose of the `.strip()` string method?",
+                options: [
+                    "To remove all occurrences of a specific character.",
+                    "To remove whitespace from the beginning and end of a string.",
+                    "To convert the string to all uppercase letters.",
+                    "To split the string into a list of characters."
+                ],
+                correct: 1,
+                explanation: "The `.strip()` method returns a copy of the string with leading and trailing whitespace (spaces, tabs, newlines) removed. It is very useful for cleaning up user input."
+            },
+            {
+                week: 8, topic: "File Handling",
+                q: "What is the advantage of using the `with` statement when opening a file (e.g., `with open('file.txt', 'r') as f:`)?",
+                options: [
+                    "It makes the file read-only.",
+                    "It automatically handles closing the file, even if errors occur.",
+                    "It reads the entire file into memory at once.",
+                    "It allows you to open multiple files simultaneously."
+                ],
+                correct: 1,
+                explanation: "The `with` statement creates a context that ensures the file is automatically closed when the block is exited, which is safer and more convenient than manually calling `file.close()`."
+            },
+            {
+                week: 9, topic: "Exception Handling",
+                q: "In a `try...except...finally` block, when is the `finally` clause executed?",
+                options: [
+                    "Only if an exception occurs.",
+                    "Only if no exception occurs.",
+                    "Always, regardless of whether an exception occurred or not.",
+                    "Only if a `ValueError` is caught."
+                ],
+                correct: 2,
+                explanation: "The `finally` block is always executed before leaving the `try` statement. It is used for cleanup actions that must be performed under all circumstances, such as closing a file or releasing a resource."
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "In Python OOP, what is the convention for naming an attribute to indicate that it is 'private' and should not be accessed directly from outside the class?",
+                options: [
+                    "Start the attribute name with a capital letter (e.g., `self.Name`).",
+                    "Start the attribute name with a single underscore (e.g., `self._name`).",
+                    "Start the attribute name with two underscores (e.g., `self.__name`).",
+                    "End the attribute name with an underscore (e.g., `self.name_`)."
+                ],
+                correct: 2,
+                explanation: "Starting an attribute with two underscores (`__`) invokes name mangling, making it harder to access from outside the class. While not truly private, it's the strong convention for internal-use attributes."
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "What is a primary benefit of using inheritance in object-oriented programming?",
+                options: [
+                    "It makes programs run faster.",
+                    "It allows for code reuse, reducing redundancy and making maintenance easier.",
+                    "It guarantees that the program will have no bugs.",
+                    "It simplifies the process of creating objects."
+                ],
+                correct: 1,
+                explanation: "Inheritance allows a child class to inherit attributes and methods from a parent class. This promotes code reuse, as common functionality can be defined once in the parent class and used by multiple child classes."
+            },
+            {
+                week: 12, topic: "Polymorphism",
+                q: "What is operator overloading?",
+                options: [
+                    "Creating a new operator that doesn't exist in Python.",
+                    "Making an operator behave differently for different data types (e.g., making `+` work for custom objects).",
+                    "Using too many operators in a single line of code.",
+                    "Replacing an operator with a function call."
+                ],
+                correct: 1,
+                explanation: "Operator overloading allows you to define how operators like `+`, `-`, `*`, etc., work with your custom objects by implementing special methods like `__add__`, `__sub__`, etc. This is a form of polymorphism."
+            },
+
+            // ── WEEK 7 EXTRA ────────────────────────────────────────────────────────────
+            {
+                week: 7, topic: "Functions",
+                q: "What is recursion?",
+                options: [
+                    "A loop that never ends.",
+                    "A function that calls itself to solve a smaller version of the same problem.",
+                    "A way to handle errors in a program.",
+                    "A method for sorting lists."
+                ],
+                correct: 1,
+                explanation: "Recursion is a powerful programming technique where a function calls itself. Each call solves a smaller piece of the problem until a base case is reached, which stops the recursion."
+            },
+            {
+                week: 7, topic: "String Methods",
+                q: "What does `\"hello\".upper()` return?",
+                options: [
+                    "\"Hello\"",
+                    "\"hELLO\"",
+                    "\"HELLO\"",
+                    "An error, as strings are immutable."
+                ],
+                correct: 2,
+                explanation: "The `.upper()` method returns a new string with all characters converted to uppercase. The original string is not modified."
+            },
+            {
+                week: 7, topic: "String Methods",
+                q: "What is the output of `\"Python is fun\".find('is')`?",
+                options: [
+                    "True",
+                    "7",
+                    "8",
+                    "-1"
+                ],
+                correct: 1,
+                explanation: "The `.find()` method returns the starting index of the first occurrence of the substring. 'is' starts at index 7. If the substring is not found, it returns -1."
+            },
+            {
+                week: 7, topic: "Functions",
+                q: "What is a lambda function in Python?",
+                options: [
+                    "A normal function defined with the `def` keyword.",
+                    "A small, anonymous function defined with the `lambda` keyword.",
+                    "A function that can only be used once.",
+                    "A function used for mathematical calculations only."
+                ],
+                correct: 1,
+                explanation: "A lambda function is a small, anonymous function that can have any number of arguments but only one expression. It's often used for short, simple operations."
+            },
+            {
+                week: 7, topic: "String Formatting",
+                q: "Which method is considered the most modern and readable for formatting strings in Python?",
+                options: [
+                    "%-formatting (e.g., `\"%s\" % name`)",
+                    "`.format()` method (e.g., `\"{}\".format(name)`)",
+                    "f-strings (e.g., `f\"{name}\"`)",
+                    "String concatenation with `+`"
+                ],
+                correct: 2,
+                explanation: "F-strings, introduced in Python 3.6, are generally preferred for their conciseness and readability, as they allow you to embed expressions directly inside string literals."
+            },
+
+            // ── WEEK 8 EXTRA ────────────────────────────────────────────────────────────
+            {
+                week: 8, topic: "File Handling",
+                q: "What does the file method `f.seek(0)` do?",
+                options: [
+                    "Closes the file.",
+                    "Reads the first line of the file.",
+                    "Moves the file cursor (read/write position) to the beginning of the file.",
+                    "Deletes the contents of the file."
+                ],
+                correct: 2,
+                explanation: "The `seek()` method changes the current file position. `seek(0)` moves the cursor to the start (byte 0) of the file, allowing you to read or write from the beginning again."
+            },
+            {
+                week: 8, topic: "File Handling",
+                q: "Which file mode opens a file for both reading and writing?",
+                options: [
+                    "'r'",
+                    "'w'",
+                    "'r+'",
+                    "'a'"
+                ],
+                correct: 2,
+                explanation: "The 'r+' mode opens a file for both reading and writing. The file pointer is placed at the beginning of the file."
+            },
+            {
+                week: 8, topic: "Testing",
+                q: "What is a 'unit test'?",
+                options: [
+                    "A test for the entire application working together.",
+                    "A test for a small, isolated piece of code, like a single function or method.",
+                    "A test performed manually by a user.",
+                    "A test that checks the program's performance under heavy load."
+                ],
+                correct: 1,
+                explanation: "A unit test focuses on verifying that a small, specific 'unit' of the codebase (like a function) works correctly in isolation."
+            },
+            {
+                week: 8, topic: "Debugging",
+                q: "What is the purpose of a 'breakpoint' in debugging?",
+                options: [
+                    "To mark a line of code that has an error.",
+                    "To automatically fix a bug in the code.",
+                    "To pause the execution of the program at a specific line so you can inspect its state.",
+                    "To break the program into smaller functions."
+                ],
+                correct: 2,
+                explanation: "A breakpoint is a tool used by debuggers that intentionally pauses program execution at a specific point, allowing developers to examine variables and the call stack to understand what's happening."
+            },
+            {
+                week: 8, topic: "File Handling",
+                q: "What is the difference between `f.read()` and `f.readline()`?",
+                options: [
+                    "`read()` reads the entire file into one string, `readline()` reads only the next line.",
+                    "`read()` reads one character, `readline()` reads one word.",
+                    "`read()` returns a list of lines, `readline()` returns a single string.",
+                    "There is no difference."
+                ],
+                correct: 0,
+                explanation: "`read()` will read the entire file content into a single string. `readline()` reads from the current cursor position until it hits a newline character (`\\n`), returning just that one line."
+            },
+
+            // ── WEEK 9 EXTRA ────────────────────────────────────────────────────────────
+            {
+                week: 9, topic: "2D Lists",
+                q: "How would you get the number of rows in a 2D list named `matrix`?",
+                options: [
+                    "`len(matrix[0])`",
+                    "`len(matrix)`",
+                    "`matrix.rows()`",
+                    "`matrix.size()`"
+                ],
+                correct: 1,
+                explanation: "`len(matrix)` returns the number of sub-lists (rows) in the main list. `len(matrix[0])` would return the number of columns in the first row."
+            },
+            {
+                week: 9, topic: "Dictionaries",
+                q: "What happens if you try to access a dictionary key that does not exist using the `.get()` method without a default value?",
+                options: [
+                    "It raises a `KeyError`.",
+                    "It returns `0`.",
+                    "It returns `None`.",
+                    "It returns an empty string `''`."
+                ],
+                correct: 2,
+                explanation: "The `.get()` method is a safe way to access keys. If the key is not found, it returns `None` by default, avoiding a `KeyError`."
+            },
+            {
+                week: 9, topic: "Exception Handling",
+                q: "Which built-in Python error is raised when you try to perform an operation on operands of incompatible types, like adding a string to an integer?",
+                options: [
+                    "`ValueError`",
+                    "`SyntaxError`",
+                    "`TypeError`",
+                    "`NameError`"
+                ],
+                correct: 2,
+                explanation: "A `TypeError` is raised when an operation or function is applied to an object of an inappropriate type. For example, `'hello' + 5` would raise a `TypeError`."
+            },
+            {
+                week: 9, topic: "Dictionaries",
+                q: "How can you get a list of all the values in a dictionary `d`?",
+                options: [
+                    "`d.keys()`",
+                    "`list(d)`",
+                    "`d.items()`",
+                    "`d.values()`"
+                ],
+                correct: 3,
+                explanation: "The `.values()` method returns a view object that displays a list of all the values in the dictionary. To get an actual list, you can use `list(d.values())`."
+            },
+            {
+                week: 9, topic: "2D Lists",
+                q: "What is a common way to create a 3x3 2D list (grid) of zeros in Python?",
+                options: [
+                    "`[[0] * 3] * 3`",
+                    "`[[0,0,0], [0,0,0], [0,0,0]]`",
+                    "`[0 for _ in range(3)] * 3`",
+                    "All of the above can be used, but only one is safe from reference issues."
+                ],
+                correct: 1,
+                explanation: "While `[[0] * 3] * 3` seems to work, it creates rows that are references to the same list, causing unintended side effects. The explicit `[[0,0,0], [0,0,0], [0,0,0]]` or a list comprehension `[[0 for _ in range(3)] for _ in range(3)]` are the safe ways."
+            },
+
+            // ── WEEK 10 EXTRA ───────────────────────────────────────────────────────────
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "What is a class attribute?",
+                options: [
+                    "An attribute that belongs to a specific instance of a class.",
+                    "An attribute that is shared by all instances of a class.",
+                    "A method inside a class.",
+                    "The name of the class."
+                ],
+                correct: 1,
+                explanation: "A class attribute is defined outside of any methods (including `__init__`) and is shared across all objects of that class. An instance attribute is defined inside `__init__` using `self` and is unique to each object."
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "What is the purpose of the `__str__` method in a Python class?",
+                options: [
+                    "To convert an object to a string, typically for debugging.",
+                    "To provide a user-friendly, readable string representation of an object.",
+                    "To initialize the object's attributes.",
+                    "To compare two objects."
+                ],
+                correct: 1,
+                explanation: "The `__str__` method is called by `str(object)` and `print(object)`. It should return a nice, human-readable string representation of the object. `__repr__` is for a more developer-focused representation."
+            },
+            {
+                week: 10, topic: "OOP in Python",
+                q: "If `c1` is an object of class `Car`, how would you call a method named `drive` defined in the `Car` class?",
+                options: [
+                    "`Car.drive()`",
+                    "`c1.drive()`",
+                    "`drive(c1)`",
+                    "`c1->drive()`"
+                ],
+                correct: 1,
+                explanation: "Instance methods are called on the object itself using dot notation. `c1.drive()` calls the `drive` method, automatically passing the instance `c1` as the first argument (`self`)."
+            },
+            {
+                week: 10, topic: "OOP Concepts",
+                q: "What is Abstraction in OOP?",
+                options: [
+                    "Bundling data and methods together.",
+                    "Creating a new class from an existing one.",
+                    "Hiding complex implementation details and showing only the necessary features of an object.",
+                    "An object's ability to take many forms."
+                ],
+                correct: 2,
+                explanation: "Abstraction focuses on hiding the internal complexity from the user. For example, you know how to drive a car (using the steering wheel, pedals) without needing to know how the engine works internally."
+            },
+            {
+                week: 10, topic: "OOP in Python",
+                q: "What is a 'method' in the context of OOP?",
+                options: [
+                    "A variable that belongs to a class.",
+                    "A function that is defined inside a class and operates on instances of that class.",
+                    "A standalone function that is not part of any class.",
+                    "A blueprint for creating objects."
+                ],
+                correct: 1,
+                explanation: "A method is essentially a function that is part of a class. It is called on an instance of the class and can access and modify the object's data (attributes)."
+            },
+
+            // ── WEEK 11 EXTRA ───────────────────────────────────────────────────────────
+            {
+                week: 11, topic: "Inheritance",
+                q: "What does the `super()` function do in Python?",
+                options: [
+                    "It calls the method from the child class.",
+                    "It allows a child class to access methods and properties of its parent class.",
+                    "It creates a new instance of a class.",
+                    "It stops a program's execution."
+                ],
+                correct: 1,
+                explanation: "`super()` is used to refer to the parent class. It is commonly used in a child class's `__init__` method to call the parent's `__init__` and initialize the inherited attributes."
+            },
+            {
+                week: 11, topic: "Types of Inheritance",
+                q: "When one class is a base for multiple derived classes, what type of inheritance is this?",
+                options: [
+                    "Multi-level Inheritance",
+                    "Multiple Inheritance",
+                    "Hierarchical Inheritance",
+                    "Single Inheritance"
+                ],
+                correct: 2,
+                explanation: "Hierarchical inheritance is when one parent class has multiple child classes inheriting from it, like a `Vehicle` class being the parent for `Car`, `Truck`, and `Motorcycle` classes."
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "Can a child class override a method from its parent class?",
+                options: [
+                    "No, methods from the parent class are final.",
+                    "Yes, by defining a method with the same name in the child class.",
+                    "Only if the parent class explicitly allows it.",
+                    "Yes, but it must have a different number of parameters."
+                ],
+                correct: 1,
+                explanation: "Yes, this is called method overriding. If a child class defines a method with the same name as one in its parent, the child's version will be used for instances of the child class."
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "What is the `is-a` relationship in the context of inheritance?",
+                options: [
+                    "It describes an object that contains another object (composition).",
+                    "It describes the relationship where a child class is a more specific version of its parent class (e.g., a 'Car' is a 'Vehicle').",
+                    "It describes two unrelated classes.",
+                    "It describes the relationship between an object and its methods."
+                ],
+                correct: 1,
+                explanation: "Inheritance models an 'is-a' relationship. A `Student` is a `Person`. A `Dog` is an `Animal`. This means the child class has all the properties of the parent, plus its own specializations."
+            },
+            {
+                week: 11, topic: "Inheritance",
+                q: "In Python, how do you specify that a class `Student` inherits from a class `Person`?",
+                options: [
+                    "`class Student extends Person:`",
+                    "`class Student inherits Person:`",
+                    "`class Student(Person):`",
+                    "`class Student: inherits(Person)`"
+                ],
+                correct: 2,
+                explanation: "The syntax for inheritance in Python is to put the parent class's name in parentheses after the child class's name: `class ChildClassName(ParentClassName):`."
+            },
+
+            // ── WEEK 12 EXTRA ───────────────────────────────────────────────────────────
+            {
+                week: 12, topic: "Polymorphism",
+                q: "Which of the following is an example of polymorphism in Python?",
+                options: [
+                    "Using the `+` operator to add two integers and also to concatenate two strings.",
+                    "Defining a variable inside a function.",
+                    "Using a `for` loop to iterate over a list.",
+                    "Importing a module into a script."
+                ],
+                correct: 0,
+                explanation: "This is a classic example of polymorphism. The `+` operator performs different actions (addition vs. concatenation) depending on the data type of its operands."
+            },
+            {
+                week: 12, topic: "MRO",
+                q: "In a complex multiple inheritance scenario, what problem does the C3 linearization algorithm (used for Python's MRO) solve?",
+                options: [
+                    "It ensures that methods are called in alphabetical order.",
+                    "It prevents the 'diamond problem' where a class could inherit the same method from two different paths.",
+                    "It makes method calls faster.",
+                    "It allows a class to inherit from more than 10 parent classes."
+                ],
+                correct: 1,
+                explanation: "The 'diamond problem' is a classic issue in multiple inheritance. The MRO ensures a consistent, predictable order for method resolution that preserves the local precedence of classes and monotonicity."
+            },
+            {
+                week: 12, topic: "Polymorphism",
+                q: "What is the difference between method overriding and method overloading?",
+                options: [
+                    "They are the same concept.",
+                    "Overriding is a child class replacing a parent's method; Overloading is having multiple methods with the same name but different parameters in the same class.",
+                    "Overloading is a child class replacing a parent's method; Overriding is having multiple methods with the same name but different parameters.",
+                    "Overriding is for functions, Overloading is for operators."
+                ],
+                correct: 1,
+                explanation: "Method Overriding is a run-time polymorphism concept related to inheritance. Method Overloading (which Python does not directly support in the traditional sense) is having multiple methods with the same name but different signatures."
+            },
+            {
+                week: 12, topic: "Duck Typing",
+                q: "Why is Python considered to have 'duck typing'?",
+                options: [
+                    "Because it was created by a developer named Howard Duck.",
+                    "Because the type of an object is determined by its behavior (the methods it has) rather than its explicit class.",
+                    "Because it has a built-in module for handling ducks.",
+                    "Because all objects inherit from a base class named `Duck`."
+                ],
+                correct: 1,
+                explanation: "Duck typing follows the principle: 'If it walks like a duck and it quacks like a duck, then it must be a duck.' In Python, we care more about what an object can *do* (its methods) than what it *is* (its class)."
+            },
+            {
+                week: 12, topic: "Default Parameters",
+                q: "What is a potential pitfall of using a mutable object (like a list) as a default parameter in a Python function?",
+                options: [
+                    "It will cause a `SyntaxError`.",
+                    "The default object is shared across all calls to the function, leading to unexpected behavior.",
+                    "It makes the function run much slower.",
+                    "It is not possible to use mutable objects as default parameters."
+                ],
+                correct: 1,
+                explanation: "The default value is evaluated only once when the function is defined. If that default is a mutable object like a list, any modification to it in one call will persist for subsequent calls, which is usually not the intended behavior."
+            },
+
+            // ── MIXED REVIEW (1) ────────────────────────────────────────────────────────
+            {
+                week: "mixed", topic: "Functions",
+                q: "A variable defined inside a function is called a...",
+                options: ["Global variable", "Class variable", "Instance variable", "Local variable"],
+                correct: 3,
+                explanation: "Variables created inside a function have a local scope and are only accessible within that function."
+            },
+            {
+                week: "mixed", topic: "File Handling",
+                q: "Which mode is used to open a file for appending text, creating it if it doesn't exist?",
+                options: ["'w'", "'r'", "'a'", "'x'"],
+                correct: 2,
+                explanation: "The 'a' (append) mode opens a file for writing at the end. If the file does not exist, it creates it."
+            },
+            {
+                week: "mixed", topic: "2D Lists",
+                q: "In a 2D list `grid = [[1,2], [3,4]]`, how do you access the number 3?",
+                options: ["`grid[1][0]`", "`grid[0][1]`", "`grid[1,0]`", "`grid[3]`"],
+                correct: 0,
+                explanation: "`grid[1]` refers to the second row `[3,4]`. `[0]` of that row is the element at index 0, which is 3."
+            },
+            {
+                week: "mixed", topic: "Dictionaries",
+                q: "Which method removes a key-value pair from a dictionary and returns the corresponding value?",
+                options: ["`.remove()`", "`.delete()`", "`.pop()`", "`del` keyword"],
+                correct: 2,
+                explanation: "The `.pop(key)` method removes the specified key and returns its value. The `del` keyword removes the pair but does not return the value."
+            },
+            {
+                week: "mixed", topic: "OOP",
+                q: "What is the main purpose of the `__init__` method in a class?",
+                options: ["To destroy an object", "To initialize the state of a newly created object", "To return a string representation of the object", "To be the first method called in a script"],
+                correct: 1,
+                explanation: "The `__init__` method is the constructor; it runs as soon as an object of a class is instantiated and is used to set up its initial attributes."
+            },
+            {
+                week: "mixed", topic: "Inheritance",
+                q: "The class from which another class inherits is called the...",
+                options: ["Child class", "Derived class", "Subclass", "Parent class (or Base class)"],
+                correct: 3,
+                explanation: "The class being inherited from is the Parent or Base class. The class that inherits is the Child, Derived, or Subclass."
+            },
+            {
+                week: "mixed", topic: "Polymorphism",
+                q: "The ability of a method or operator to work on different types of objects is called...",
+                options: ["Inheritance", "Encapsulation", "Polymorphism", "Abstraction"],
+                correct: 2,
+                explanation: "Polymorphism means 'many forms'. It allows a single interface (like the `+` operator or a method name) to represent different underlying operations."
+            },
+            {
+                week: "mixed", topic: "String Methods",
+                q: "What is the output of `len(\" a b \".strip())`?",
+                options: ["5", "3", "4", "2"],
+                correct: 1,
+                explanation: "`.strip()` removes leading/trailing whitespace, resulting in the string `\"a b\"`. The length of `\"a b\"` is 3."
+            },
+            {
+                week: "mixed", topic: "Exception Handling",
+                q: "Which error is raised when you refer to a variable that has not been defined?",
+                options: ["`TypeError`", "`ValueError`", "`NameError`", "`IndexError`"],
+                correct: 2,
+                explanation: "A `NameError` occurs when Python cannot find a name (variable or function) in the current scope."
+            },
+            {
+                week: "mixed", topic: "MRO",
+                q: "What does MRO stand for in Python?",
+                options: ["Method Resolution Order", "Multiple Resolution Order", "Method Reference Object", "Main Resolution Object"],
+                correct: 0,
+                explanation: "MRO stands for Method Resolution Order, which is the sequence Python follows to search for a method in a class hierarchy."
+            },
+
+            // ── MIXED REVIEW (2) ────────────────────────────────────────────────────────
+            {
+                week: "mixed", topic: "Functions",
+                q: "What is the keyword used to define a new function in Python?",
+                options: ["`function`", "`def`", "`fun`", "`define`"],
+                correct: 1,
+                explanation: "The `def` keyword is used to start a function definition in Python."
+            },
+            {
+                week: "mixed", topic: "File Handling",
+                q: "After writing to a file, what is a good practice to ensure the data is saved to disk?",
+                options: ["Re-open the file in read mode", "Call `f.save()`", "Call `f.close()`", "Delete the file"],
+                correct: 2,
+                explanation: "Closing a file with `f.close()` or using a `with` statement ensures that any buffered data is written to the disk."
+            },
+            {
+                week: "mixed", topic: "Dictionaries",
+                q: "Are dictionary keys case-sensitive?",
+                options: ["Yes, 'key' and 'Key' are treated as different keys.", "No, 'key' and 'Key' are the same.", "Only if the value is a string.", "Only in Python 2."],
+                correct: 0,
+                explanation: "Yes, dictionary keys are case-sensitive. `{'name': 'Alice'}` and `{'Name': 'Bob'}` are two separate entries."
+            },
+            {
+                week: "mixed", topic: "OOP",
+                q: "What is the term for creating an object from a class?",
+                options: ["Inheritance", "Instantiation", "Polymorphism", "Composition"],
+                correct: 1,
+                explanation: "Instantiation is the process of creating a specific instance (object) of a class."
+            },
+            {
+                week: "mixed", topic: "Inheritance",
+                q: "If class `B` inherits from class `A`, can an object of class `B` access methods from class `A`?",
+                options: ["No, they are completely separate.", "Yes, it inherits all public and protected methods from A.", "Only if `A` explicitly grants permission.", "Only the `__init__` method is accessible."],
+                correct: 1,
+                explanation: "A child class inherits the methods of its parent class, which is a core principle of code reuse in OOP."
+            },
+            {
+                week: "mixed", topic: "Polymorphism",
+                q: "When a child class redefines a method from its parent, it is called...",
+                options: ["Method Overloading", "Method Overriding", "Method Duplication", "Method Hiding"],
+                correct: 1,
+                explanation: "Method overriding allows a subclass to provide a specific implementation of a method that is already provided by one of its superclasses."
+            },
+            {
+                week: "mixed", topic: "String Methods",
+                q: "What does the string method `.startswith('Py')` check?",
+                options: ["If the string is exactly 'Py'.", "If the string contains 'Py' anywhere.", "If the string begins with the substring 'Py'.", "If the string ends with the substring 'Py'."],
+                correct: 2,
+                explanation: "The `.startswith()` method returns `True` if the string starts with the specified prefix, otherwise `False`."
+            },
+            {
+                week: "mixed", topic: "Exception Handling",
+                q: "What is the purpose of the `raise` keyword in Python?",
+                options: ["To create a new error type.", "To ignore an error.", "To manually trigger an exception.", "To handle an exception."],
+                correct: 2,
+                explanation: "The `raise` keyword allows you to force a specified exception to occur, which can be useful for custom error handling and validation."
+            },
+            {
+                week: "mixed", topic: "2D Lists",
+                q: "Is a 2D list in Python a single block of memory?",
+                options: ["Yes, it's a contiguous grid like in C.", "No, it's a list where each element is another list.", "Only if all elements are integers.", "Yes, but only for small lists."],
+                correct: 1,
+                explanation: "A Python 2D list is actually a list of lists. The outer list contains references to the inner lists, which are stored separately in memory."
+            },
+            {
+                week: "mixed", topic: "OOP",
+                q: "What is the relationship between a class and an object?",
+                options: ["They are the same thing.", "A class is an instance of an object.", "An object is an instance of a class.", "A class is a variable, an object is a function."],
+                correct: 2,
+                explanation: "A class is a blueprint or template, while an object is a concrete instance created from that blueprint."
+            }
+        ]; // end QUESTIONS array
+
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // STATE
+        // ─────────────────────────────────────────────────────────────────────────────
+        let currentIndex = 0;
+        let answers = {}; // Map of question index to selected option index
+        let revealed = {}; // Track which questions have been answered
+        let filteredQ = [];
+        let currentCorrectAnswerText = '';
+
+        const weekColors = {
+            7: '#ff6b9d', 8: '#ff1493', 9: '#ff69b4', 10: '#ff85c1', 11: '#ff99d1', 12: '#ec4899', mixed: '#ff1493'
+        };
+
+        // Fisher-Yates Shuffle algorithm
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function renderQuestion() {
+            if (currentIndex < 0 || currentIndex >= filteredQ.length) return;
+
+            const q = filteredQ[currentIndex];
+            const qCard = document.getElementById('question-card');
+            const qNumLabel = document.getElementById('q-num-label');
+            const weekBadge = document.getElementById('week-badge');
+            const topicBadge = document.getElementById('topic-badge');
+            const questionText = document.getElementById('question-text');
+            const optionsList = document.getElementById('options-list');
+            const explanationBox = document.getElementById('explanation-box');
+            const btnSubmit = document.getElementById('btn-submit');
+            const btnNext = document.getElementById('btn-next');
+
+            // Set metadata
+            qNumLabel.textContent = `Q${currentIndex + 1}`;
+            weekBadge.textContent = q.week === 'mixed' ? 'Mixed' : `Week ${q.week}`;
+            weekBadge.style.background = weekColors[q.week] || '#ff1493';
+            topicBadge.textContent = q.topic;
+
+            // Store the correct answer's TEXT before shuffling
+            currentCorrectAnswerText = q.options[q.correct];
+
+            // Shuffle the options
+            const shuffledOptions = shuffleArray(q.options);
+
+            // Set question text
+            questionText.innerHTML = q.q;
+            if (q.code) {
+                const codeBlock = document.createElement('pre');
+                codeBlock.className = 'code-block';
+                codeBlock.textContent = q.code;
+                questionText.appendChild(codeBlock);
+            }
+
+            // Render shuffled options
+            optionsList.innerHTML = '';
+            shuffledOptions.forEach((optText, i) => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                li.dataset.optionText = optText; // Store original text for answer checking
+                li.innerHTML = `
+          <span class="option-letter">${String.fromCharCode(65 + i)}</span>
+          <span class="option-text">${optText}</span>
+          <span class="option-icon"></span>
+        `;
+                li.addEventListener('click', () => selectOption(li));
+                optionsList.appendChild(li);
+            });
+
+            // Reset UI
+            optionsList.querySelectorAll('.option-item').forEach(el => {
+                el.classList.remove('selected', 'disabled', 'correct', 'wrong', 'missed');
+            });
+            explanationBox.classList.remove('show');
+            btnSubmit.style.display = 'inline-block';
+            btnNext.style.display = 'none';
+
+            // If already answered, show previous answer
+            if (revealed[currentIndex]) {
+                showPreviousAnswer();
+            }
+        }
+
+        function selectOption(li) {
+            const optionsList = document.getElementById('options-list');
+            if (revealed[currentIndex]) return; // Already answered
+            optionsList.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+            li.classList.add('selected');
+        }
+
+        function revealAnswer() {
+            if (revealed[currentIndex]) return;
+
+            const optionsList = document.getElementById('options-list');
+            const selectedLi = optionsList.querySelector('.option-item.selected');
+            if (!selectedLi) return;
+
+            const selectedText = selectedLi.dataset.optionText;
+            const isCorrect = selectedText === currentCorrectAnswerText;
+
+            // Store the answer (we'll store the text, but convert for scoring)
+            answers[currentIndex] = selectedText;
+            revealed[currentIndex] = true;
+
+            // Disable all options
+            optionsList.querySelectorAll('.option-item').forEach(li => li.classList.add('disabled'));
+
+            // Show result
+            if (isCorrect) {
+                selectedLi.classList.add('correct');
+                selectedLi.querySelector('.option-icon').innerHTML = '✔️';
+                playCorrectAnswerSound();
+                showAnswerPopup(true, filteredQ[currentIndex].explanation);
+            } else {
+                selectedLi.classList.add('wrong');
+                selectedLi.querySelector('.option-icon').innerHTML = '❌';
+                // Highlight correct answer
+                const correctLi = Array.from(optionsList.children).find(li => li.dataset.optionText === currentCorrectAnswerText);
+                if (correctLi) {
+                    correctLi.classList.add('missed');
+                    correctLi.querySelector('.option-icon').innerHTML = '✓';
+                }
+                showAnswerPopup(false, filteredQ[currentIndex].explanation);
+            }
+
+            updateScore();
+            updateProgress();
+
+            const explanationBox = document.getElementById('explanation-box');
+            const btnSubmit = document.getElementById('btn-submit');
+            const btnNext = document.getElementById('btn-next');
+
+            explanationBox.classList.add('show');
+            btnSubmit.style.display = 'none';
+            btnNext.style.display = 'inline-block';
+        }
+
+        function showPreviousAnswer() {
+            const optionsList = document.getElementById('options-list');
+            const selectedText = answers[currentIndex];
+            const q = filteredQ[currentIndex];
+
+            optionsList.querySelectorAll('.option-item').forEach(li => {
+                li.classList.add('disabled');
+                if (li.dataset.optionText === selectedText) {
+                    li.classList.add(selectedText === currentCorrectAnswerText ? 'correct' : 'wrong');
+                    li.querySelector('.option-icon').innerHTML = selectedText === currentCorrectAnswerText ? '✔️' : '❌';
+                } else if (li.dataset.optionText === currentCorrectAnswerText) {
+                    li.classList.add('missed');
+                    li.querySelector('.option-icon').innerHTML = '✓';
+                }
+            });
+
+            const explanationBox = document.getElementById('explanation-box');
+            const btnSubmit = document.getElementById('btn-submit');
+            const btnNext = document.getElementById('btn-next');
+
+            explanationBox.classList.add('show');
+            btnSubmit.style.display = 'none';
+            btnNext.style.display = 'inline-block';
+        }
+
+        document.getElementById('btn-submit').addEventListener('click', revealAnswer);
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // FILTERING
+        // ─────────────────────────────────────────────────────────────────────────────
+        function filterQuestions(week) {
+            if (week === 'all') {
+                filteredQ = QUESTIONS;
+            } else {
+                filteredQ = QUESTIONS.filter(q => {
+                    if (week === 'mixed') return q.week === 'mixed';
+                    return q.week === parseInt(week);
+                });
+            }
+            currentIndex = 0;
+            answers = {};
+            revealed = {};
+            renderQuestion();
+            updateProgress();
+            updateScore();
+        }
+
+        // Filter pill click handlers
+        document.querySelectorAll('.filter-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const week = pill.dataset.week;
+                filterQuestions(week);
+            });
+        });
+
+        // Safe audio setup (keeps quiz working even if audio file/codec is unavailable)
+        let correctAnswerSound = null;
+        try {
+            correctAnswerSound = new Audio('./specialsound.m4a');
+            correctAnswerSound.preload = 'auto';
+        } catch (_) {
+            correctAnswerSound = null;
+        }
+
+        // Initialize with all questions
+        filterQuestions('all');
+
+        function playCorrectAnswerSound() {
+            if (!correctAnswerSound) return;
+            try {
+                // Clone for each play to avoid currentTime/readyState issues across browsers.
+                const oneShot = correctAnswerSound.cloneNode();
+                oneShot.volume = 1;
+                const playPromise = oneShot.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(() => { });
+                }
+            } catch (_) {
+                // Ignore audio playback failures (autoplay policies, missing codec, etc.)
+            }
+        }
+
+        function goToNextQuestion() {
+            currentIndex++;
+            if (currentIndex < filteredQ.length) {
+                renderQuestion();
+                updateProgress();
+            } else {
+                document.getElementById('question-card').style.display = 'none';
+                document.getElementById('results-screen').style.display = 'block';
+                showResults();
+            }
+        }
+
+        function showAnswerPopup(isCorrect, explanationHtml) {
+            const popup = document.getElementById('answer-popup');
+            const emoji = document.getElementById('answer-popup-emoji');
+            const title = document.getElementById('answer-popup-title');
+            const msg = document.getElementById('answer-popup-msg');
+
+            emoji.textContent = isCorrect ? '🥰' : '😝';
+            title.textContent = isCorrect ? 'Correct!' : 'Almost there!!';
+            msg.innerHTML = explanationHtml || '';
+
+            popup.classList.add('show');
+            popup.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeAnswerPopupAndContinue() {
+            const popup = document.getElementById('answer-popup');
+            popup.classList.remove('show');
+            popup.setAttribute('aria-hidden', 'true');
+            goToNextQuestion();
+        }
+
+        document.getElementById('btn-popup-close').addEventListener('click', closeAnswerPopupAndContinue);
+
+        document.getElementById('btn-next').addEventListener('click', goToNextQuestion);
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+                updateProgress();
+            }
+        });
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // PROGRESS & SCORE
+        // ─────────────────────────────────────────────────────────────────────────────
+        function updateProgress() {
+            const total = filteredQ.length;
+            const done = Object.keys(revealed).length;
+            const pct = total === 0 ? 0 : Math.round((currentIndex + 1) / total * 100);
+            document.getElementById('prog-text').textContent = `Question ${Math.min(currentIndex + 1, total)} of ${total}`;
+            document.getElementById('prog-pct').textContent = `${pct}%`;
+            document.getElementById('progress-bar-fill').style.width = `${Math.max(1, pct)}%`;
+        }
+
+        function updateScore() {
+            let correct = 0;
+            for (const [idx, chosen] of Object.entries(answers)) {
+                if (filteredQ[idx] && filteredQ[idx].correct === chosen) correct++;
+            }
+            document.getElementById('live-score').textContent = correct;
+            document.getElementById('live-total').textContent = filteredQ.length;
+        }
+
+        function getHighScoreMessage(scorePercent) {
+            if (scorePercent > 85) {
+                return 'Aww, that was super cute work. You did an amazing job!';
+            }
+            return '';
+        }
+
+        function showResults() {
+            const total = filteredQ.length;
+            let correct = 0, wrong = 0;
+            for (const [idx, chosen] of Object.entries(answers)) {
+                if (!filteredQ[idx]) continue;
+                if (filteredQ[idx].correct === chosen) correct++;
+                else wrong++;
+            }
+            const skipped = total - Object.keys(answers).length;
+            const pct = total === 0 ? 0 : Math.round(correct / total * 100);
+            const highScoreMessage = getHighScoreMessage(pct);
+            document.getElementById('final-score-txt').textContent = `${pct}%`;
+            document.getElementById('final-score-sub').textContent = highScoreMessage || `You got ${correct} out of ${total} correct.`;
+            document.getElementById('res-correct').textContent = correct;
+            document.getElementById('res-wrong').textContent = wrong;
+            document.getElementById('res-skipped').textContent = skipped;
+        }
+
+        function restart() {
+            currentIndex = 0;
+            answers = {};
+            revealed = {};
+            document.getElementById('question-card').style.display = 'block';
+            document.getElementById('results-screen').style.display = 'none';
+            document.getElementById('answer-popup').classList.remove('show');
+            document.getElementById('answer-popup').setAttribute('aria-hidden', 'true');
+            renderQuestion();
+            updateProgress();
+            updateScore();
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // INIT
+        // ─────────────────────────────────────────────────────────────────────────────
+        renderQuestion();
+        updateProgress();
+        updateScore();
+    </script>
+</body>
+
+</html>
